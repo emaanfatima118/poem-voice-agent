@@ -1,36 +1,45 @@
-import React, { useState } from "react";
-import { User, Lock, Eye, EyeOff, Mail } from "lucide-react";
-import login_illustration from "../assets/signup_illustration.png";
+import React, { useState, useEffect } from "react";
+import { User, Lock, Eye, EyeOff, Mail, UserPlus } from "lucide-react";
+import signup_illustration from "../assets/signup_illustration.png";
 import Logo from "../components/Logo";
 import Slogan from "../components/Slogan";
 
-// Illustration Component
 const Illustration = () => {
   return (
-    <div className="flex justify-center items-center">
-      <div className="w-64 h-64 flex items-center justify-center">
+    <div className="flex justify-center items-center animate-float">
+      <div className="w-130 h-130 flex items-center justify-center">
         <img
-          src={login_illustration}
+          src={signup_illustration}
           alt="Signup Illustration"
-          className="max-w-full max-h-full object-contain"
+          className="max-w-full max-h-full object-contain drop-shadow-2xl"
         />
       </div>
     </div>
   );
 };
 
-// Signup Form Component
 const SignupForm = () => {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ): Promise<void> => {
     e.preventDefault();
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/signup", {
@@ -59,65 +68,64 @@ const SignupForm = () => {
     } catch (err) {
       console.error("❌ Signup failed:", err);
       alert("Something went wrong!");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+    <div className="w-full max-w-lg animate-slide-up">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-gray-200/50 hover:shadow-2xl transition-all duration-300">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-1">
-            Welcome to ForeSyte
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Create Account
           </h2>
-          <p className="text-gray-600 text-sm">Create your account</p>
+          <p className="text-gray-600 text-sm">Join us today and get started</p>
         </div>
 
         <div className="space-y-4">
-          {/* Name Field */}
-          <div className="space-y-1">
-            <label
-              htmlFor="name"
-              className="block text-xs font-medium text-gray-700"
-            >
-              Full Name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-gray-400" />
+          {/* Name and Username in one row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name
+              </label>
+              <div className="relative">
+                <UserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
+                  placeholder="Full name"
+                  required
+                />
               </div>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-gray-50 focus:bg-white text-sm"
-                placeholder="Enter your full name"
-                required
-              />
             </div>
-          </div>
 
-          {/* Username Field */}
-          <div className="space-y-1">
-            <label
-              htmlFor="username"
-              className="block text-xs font-medium text-gray-700"
-            >
-              Username
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-gray-400" />
+            <div className="space-y-1">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
+                  placeholder="Username"
+                  required
+                />
               </div>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-gray-50 focus:bg-white text-sm"
-                placeholder="Choose a username"
-                required
-              />
             </div>
           </div>
 
@@ -125,74 +133,104 @@ const SignupForm = () => {
           <div className="space-y-1">
             <label
               htmlFor="email"
-              className="block text-xs font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700"
             >
-              Email
+              Email Address
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-4 w-4 text-gray-400" />
-              </div>
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-gray-50 focus:bg-white text-sm"
+                className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
                 placeholder="Enter your email"
                 required
               />
             </div>
           </div>
 
-          {/* Password Field */}
-          <div className="space-y-1">
-            <label
-              htmlFor="password"
-              className="block text-xs font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-gray-50 focus:bg-white text-sm"
-                placeholder="Create a password"
-                required
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
+          {/* Password Fields in one row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                )}
-              </button>
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
+                  placeholder="Password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
+                  placeholder="Confirm"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Terms & Conditions */}
-          <div className="flex items-center">
+          {/* Terms and Conditions */}
+          <div className="flex items-center justify-center py-2">
             <input
               id="terms"
               type="checkbox"
-              className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
               required
             />
-            <label htmlFor="terms" className="ml-2 block text-xs text-gray-700">
+            <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
               I agree to the{" "}
               <a
                 href="#"
-                className="text-blue-600 hover:text-blue-500 font-medium"
+                className="text-purple-600 hover:text-purple-500 font-medium"
               >
                 Terms & Conditions
               </a>
@@ -202,23 +240,32 @@ const SignupForm = () => {
           {/* Signup Button */}
           <button
             onClick={handleSubmit}
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white 
-             bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] 
-             hover:from-[#b39cff] hover:to-[#5a49d1]
-             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-secondary)]
-             transition duration-200 transform hover:scale-105"
+            disabled={isLoading}
+            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white 
+             bg-gradient-to-r from-purple-600 to-blue-600 
+             hover:from-purple-700 hover:to-blue-700
+             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
+             transition-all duration-200 transform hover:scale-[1.01] hover:shadow-lg
+             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            Sign Up
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating Account...
+              </>
+            ) : (
+              "Create Account"
+            )}
           </button>
         </div>
 
         {/* Login Link */}
         <div className="mt-4 text-center">
-          <p className="text-xs text-gray-600">
+          <p className="text-sm text-gray-600">
             Already have an account?{" "}
             <a
               href="/login"
-              className="font-medium text-blue-600 hover:text-blue-500 transition duration-200"
+              className="font-medium text-purple-600 hover:text-purple-500 transition-colors duration-200"
             >
               Sign in
             </a>
@@ -229,40 +276,148 @@ const SignupForm = () => {
   );
 };
 
-// Left Side Component
 const LeftSide = () => {
   return (
-    <div className="w-1/3 bg-[#2a2b33] flex flex-col p-6">
-      <div className="self-start mb-4">
-        <Logo />
+    <div className="w-1/3 bg-gradient-to-br from-purple-400 via-purple-500 to-blue-600 flex flex-col h-screen relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-24 h-24 bg-white/20 rounded-full blur-lg animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-white/15 rounded-full blur-md animate-float-delayed"></div>
       </div>
-      <div className="flex-1 flex items-center justify-center">
-        <Slogan />
+
+      {/* Logo at top center */}
+      <div className="flex justify-center pt-8 pb-2 animate-slide-down">
+        <div className="transform hover:scale-110 transition-transform duration-300">
+          <Logo />
+        </div>
       </div>
+
+      {/* Slogan just under logo */}
+      <div className="flex justify-center px-6 -mt-12">
+        <div className="animate-fade-in-up-delayed">
+          <Slogan />
+        </div>
+      </div>
+
+      {/* Spacer to push rest of content down if needed */}
+      <div className="flex-1"></div>
     </div>
   );
 };
 
-// Right Side Component
 const RightSide = () => {
   return (
-    <div className="w-2/3 bg-white flex items-center justify-center p-6">
-      <SignupForm />
+    <div className="w-2/3 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-8 h-screen relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-blue-50/50"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(147,51,234,0.1),transparent_70%)]"></div>
+
+      <div className="relative z-10">
+        <SignupForm />
+      </div>
     </div>
   );
 };
 
-// Main Signup Page Component
 const SignupPage = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <div className="flex h-screen bg-white relative overflow-hidden">
-      <LeftSide />
-      <RightSide />
-      {/* Illustration positioned at the boundary between left and right sides */}
-      <div className="absolute top-1/2 left-1/3 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
-        <Illustration />
+    <>
+      {/* Custom CSS for animations */}
+      <style>{`
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        @keyframes float-delayed {
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-15px);
+          }
+        }
+
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translateY(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fade-in-up-delayed {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.8s ease-out;
+        }
+
+        .animate-slide-down {
+          animation: slide-down 0.6s ease-out;
+        }
+
+        .animate-fade-in-up-delayed {
+          animation: fade-in-up-delayed 1s ease-out 0.8s both;
+        }
+      `}</style>
+
+      <div
+        className={`flex h-screen bg-white overflow-hidden relative ${
+          mounted ? "opacity-100" : "opacity-0"
+        } transition-opacity duration-500`}
+      >
+        <LeftSide />
+        <RightSide />
+        {/* Illustration positioned at the boundary with improved positioning */}
+        <div className="absolute top-[25%] left-[27%] transform -translate-x-1/2 pointer-events-none z-20">
+          <Illustration />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
