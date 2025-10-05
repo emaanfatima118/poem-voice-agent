@@ -201,7 +201,7 @@ const LoginForm = () => {
     </div>
   );
 };
-
+("");
 const LeftSide = () => {
   return (
     <div className="w-1/3 bg-gradient-to-br from-purple-400 via-purple-500 to-blue-600 flex flex-col h-screen relative overflow-hidden">
