@@ -2,7 +2,7 @@ import logo_img from "../assets/logo.png";
 
 const Logo = () => {
   return (
-    <div className="flex items-center mb-8">
+    <div className="flex items-center">
       <img
         src={logo_img}
         alt="ForeSyte Logo"

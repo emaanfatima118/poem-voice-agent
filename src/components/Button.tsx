@@ -5,19 +5,22 @@ interface ButtonProps {
   type?: "button" | "submit" | "reset";
   className?: string;
   onClick?: () => void;
+  disabled?: boolean; // Add this line
 }
 
 const Button: React.FC<ButtonProps> = ({
   text,
   type = "button",
-  className,
+  className = "",
   onClick,
+  disabled = false, // Add this line with default value
 }) => {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`w-full py-2 px-4 rounded-lg text-white bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] transition-[var(--transition)] ${className}`}
+      disabled={disabled} // Add this line
+      className={`w-full px-4 py-2 text-white bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed rounded-md transition-colors ${className}`}
     >
       {text}
     </button>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import login_illustration from "../assets/login_illustration.png";
 import Logo from "../components/Logo";
@@ -19,6 +20,7 @@ const Illustration = () => {
 };
 
 const LoginForm = () => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -47,7 +49,7 @@ const LoginForm = () => {
 
       const data = await response.json();
       console.log("✅ Login successful:", data);
-      alert("Login successful!");
+      navigate("/dashboard");
     } catch (err) {
       console.error("❌ Login failed:", err);
       alert("Something went wrong!");
