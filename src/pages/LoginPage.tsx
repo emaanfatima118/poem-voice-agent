@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import login_illustration from "../assets/login_illustration.png";
 import Logo from "../components/Logo";
 import Slogan from "../components/Slogan";
@@ -21,7 +21,7 @@ const Illustration = () => {
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,26 +33,35 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/login", {
+      const response = await fetch("http://127.0.0.1:8000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        alert(`Error: ${error.detail}`);
+        alert(`Error: ${error.detail || "Login failed"}`);
         return;
       }
 
       const data = await response.json();
       console.log("✅ Login successful:", data);
+
+      // Store the token and user info - matching backend response
+      sessionStorage.setItem("token", data.access_token);
+      sessionStorage.setItem("user_type", data.user_type);
+      sessionStorage.setItem("user_id", data.id); // Backend sends 'id', not 'user_id'
+
       navigate("/dashboard");
     } catch (err) {
       console.error("❌ Login failed:", err);
-      alert("Something went wrong!");
+      alert("Something went wrong! Please check your connection.");
     } finally {
       setIsLoading(false);
     }
@@ -71,28 +80,23 @@ const LoginForm = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Username Field */}
-          <div className="space-y-2 animate-slide-in-left">
+          {/* Email Field */}
+          <div className="space-y-2">
             <label
-              htmlFor="username"
+              htmlFor="email"
               className="block text-sm font-medium text-gray-700"
             >
-              Username
+              Email
             </label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 group-focus-within:text-purple-500">
-                <User className="h-5 w-5 text-gray-400 group-focus-within:text-purple-500" />
-              </div>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 transform focus:scale-[1.02]"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+              className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
           </div>
 
           {/* Password Field */}
@@ -203,7 +207,7 @@ const LoginForm = () => {
     </div>
   );
 };
-("");
+
 const LeftSide = () => {
   return (
     <div className="w-1/3 bg-gradient-to-br from-purple-400 via-purple-500 to-blue-600 flex flex-col h-screen relative overflow-hidden">
