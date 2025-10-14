@@ -203,6 +203,26 @@ const LoginForm = () => {
             </div>
           </div>
         </div>
+        {/* Google Login Button */}
+        <div className="mt-6 animate-fade-in-up">
+          <button
+            onClick={() =>
+              (window.location.href = "http://127.0.0.1:8000/auth/google")
+            }
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-xl shadow-sm 
+      bg-white hover:bg-gray-50 transition-all duration-300 hover:shadow-md transform hover:scale-[1.02]"
+          >
+            {/* Google Logo */}
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              alt="Google Logo"
+              className="h-5 w-5"
+            />
+            <span className="text-gray-700 font-medium">
+              Sign in with Google
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
