@@ -1,0 +1,117 @@
+# Cloud Run Service Configuration
+# Deploy with: gcloud run services replace cloudrun.yaml
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: stackwise-app
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Autoscaling
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '10'
+        
+        # CPU allocation
+        run.googleapis.com/cpu-throttling: 'false'
+        
+        # Startup probe (give time for Playwright to initialize)
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      # Container configuration
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      
+      containers:
+      - name: stackwise-app
+        image: gcr.io/YOUR_PROJECT_ID/stackwise-app:latest
+        
+        ports:
+        - name: http1
+          containerPort: 8080
+        
+        # Resources - CRITICAL FOR PLAYWRIGHT
+        resources:
+          limits:
+            cpu: '2'
+            memory: 2Gi
+          requests:
+            cpu: '1'
+            memory: 1Gi
+        
+        # Environment variables
+        env:
+        - name: NODE_ENV
+          value: production
+        
+        - name: PORT
+          value: '8080'
+        
+        - name: PLAYWRIGHT_BROWSERS_PATH
+          value: /ms-playwright
+        
+        - name: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+          value: '1'
+        
+        - name: NODE_OPTIONS
+          value: --max-old-space-size=2048
+        
+        - name: MALLOC_ARENA_MAX
+          value: '2'
+        
+        - name: NEXT_TELEMETRY_DISABLED
+          value: '1'
+        
+        # Secrets (create these in Secret Manager first)
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: DATABASE_URL
+              key: latest
+        
+        - name: GCS_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: GCS_BUCKET
+              key: latest
+        
+        - name: GOOGLE_ADS_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: GOOGLE_ADS_CLIENT_ID
+              key: latest
+        
+        - name: GOOGLE_ADS_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: GOOGLE_ADS_CLIENT_SECRET
+              key: latest
+        
+        # Liveness probe
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Startup probe (give more time on cold start)
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 12  # 60 seconds total
+  
+  traffic:
+  - latestRevision: true
+    percent: 100

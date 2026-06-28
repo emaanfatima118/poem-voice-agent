@@ -1,0 +1,1231 @@
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { 
+  Bell, 
+  MessageSquare, 
+  Workflow as WorkflowIcon, 
+  Zap,
+  Users,
+  Mail,
+  Send,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Settings,
+  Sparkles,
+  Target,
+  TrendingUp,
+  FileText,
+  DollarSign,
+  Activity,
+  Rocket,
+  Lightbulb,
+  Plus,
+  ChevronRight
+} from 'lucide-react'
+import { QuickActions } from '@/components/QuickActions'
+
+const FLIGHT_DECK_COLOR = '#1e40f2'
+
+type NotificationCategory = {
+  id: string
+  name: string
+  description: string
+  enabled: boolean
+  icon: any
+}
+
+type Trigger = {
+  id: string
+  category: string
+  name: string
+  description: string
+}
+
+type Action = {
+  id: string
+  name: string
+  type: 'notify_internal' | 'notify_sales' | 'reminder' | 'suggestion'
+  description: string
+}
+
+// Notification Categories
+const defaultNotificationCategories: NotificationCategory[] = [
+  { 
+    id: 'campaign-activity', 
+    name: 'Campaign Activity', 
+    description: 'Campaign launches, completions, and changes',
+    enabled: true,
+    icon: Rocket
+  },
+  { 
+    id: 'content-ready', 
+    name: 'Content Ready', 
+    description: 'Drafts completed and assets approved',
+    enabled: true,
+    icon: FileText
+  },
+  { 
+    id: 'flight-deck-alerts', 
+    name: 'Flight Deck Alerts', 
+    description: 'Distribution and campaign deployment updates',
+    enabled: true,
+    icon: Activity
+  },
+  { 
+    id: 'pulse-hub-changes', 
+    name: 'Pulse Hub Changes', 
+    description: 'Performance drops, intelligence updates, competitor movement',
+    enabled: true,
+    icon: TrendingUp
+  },
+  { 
+    id: 'budget-alerts', 
+    name: 'Budget Alerts', 
+    description: 'Overspend, underspend, and reallocation requests',
+    enabled: false,
+    icon: DollarSign
+  },
+  { 
+    id: 'audience-engine', 
+    name: 'Audience Engine Triggers', 
+    description: 'Account spikes and segment changes',
+    enabled: true,
+    icon: Target
+  },
+  { 
+    id: 'abm-spike-alerts', 
+    name: 'ABM Spike Alerts', 
+    description: 'Target account activity spikes (Fully Stacked)',
+    enabled: true,
+    icon: Zap
+  },
+  { 
+    id: 'strategy-cycle', 
+    name: 'Strategy Cycle Reminders', 
+    description: 'Quarterly and annual review reminders',
+    enabled: true,
+    icon: Calendar
+  },
+]
+
+// All available triggers
+const allTriggers: Trigger[] = [
+  // Campaign Triggers
+  { id: 'campaign-scheduled', category: 'Campaign', name: 'Campaign Scheduled', description: 'When a campaign is scheduled' },
+  { id: 'campaign-launched', category: 'Campaign', name: 'Campaign Launched', description: 'When a campaign goes live' },
+  { id: 'campaign-completed', category: 'Campaign', name: 'Campaign Completed', description: 'When a campaign ends' },
+  { id: 'campaign-performance-drop', category: 'Campaign', name: 'Performance Drop', description: 'When campaign performance drops (Pulse Hub scoring)' },
+  { id: 'campaign-asset-ready', category: 'Campaign', name: 'Asset Ready', description: 'When a campaign asset is ready in BrandCraft' },
+  
+  // Audience + ABM Triggers
+  { id: 'account-spike', category: 'Audience/ABM', name: 'Account Spike', description: 'When an account spikes (Fully Stacked)' },
+  { id: 'engagement-change', category: 'Audience/ABM', name: 'Segment Engagement Change', description: 'When engagement from a segment changes' },
+  { id: 'account-threshold', category: 'Audience/ABM', name: 'Account Threshold', description: 'When account hits threshold (warm → hot)' },
+  { id: 'persona-activation', category: 'Audience/ABM', name: 'Persona Segment Activates', description: 'When a persona segment activates' },
+  
+  // Content Triggers
+  { id: 'content-draft-completed', category: 'Content', name: 'Draft Completed', description: 'When a content draft is completed' },
+  { id: 'content-approved', category: 'Content', name: 'Content Approved', description: 'When content asset is approved in BrandCraft' },
+  { id: 'content-published', category: 'Content', name: 'Content Published', description: 'When a piece of content goes live' },
+  { id: 'content-top-performer', category: 'Content', name: 'Top Performer', description: 'When content hits performance criteria' },
+  
+  // Pulse Hub Triggers
+  { id: 'intelligence-update', category: 'Pulse Hub', name: 'Intelligence Update', description: 'New intelligence update' },
+  { id: 'activity-drop', category: 'Pulse Hub', name: 'Activity Drop', description: 'Drop in website activity' },
+  { id: 'competitor-movement', category: 'Pulse Hub', name: 'Competitor Movement', description: 'Competitor activity detected' },
+  { id: 'kpi-deviation', category: 'Pulse Hub', name: 'KPI Deviation', description: 'KPI deviates from target' },
+  { id: 'weekly-snapshot', category: 'Pulse Hub', name: 'Weekly Snapshot Created', description: 'Weekly snapshot ready' },
+  
+  // Budget Triggers
+  { id: 'overspend-alert', category: 'Budget', name: 'Overspend Alert', description: 'Budget overspend detected' },
+  { id: 'underspend-alert', category: 'Budget', name: 'Underspend Alert', description: 'Budget underspend detected' },
+  { id: 'channel-imbalance', category: 'Budget', name: 'Channel Imbalance', description: 'Budget allocation imbalance' },
+  { id: 'reallocation-request', category: 'Budget', name: 'Reallocation Request', description: 'Budget reallocation request (Fully Stacked)' },
+  
+  // Strategy Studio Triggers
+  { id: 'quarterly-review-due', category: 'Strategy Studio', name: 'Quarterly Review Due', description: 'Quarterly review reminder' },
+  { id: 'annual-setup-due', category: 'Strategy Studio', name: 'Annual Setup Due', description: 'Annual planning reminder' },
+  { id: '30-60-90-checkin', category: 'Strategy Studio', name: '30/60/90 Check-in', description: 'Milestone check-in date' },
+  
+  // Flight Deck Triggers
+  { id: 'distribution-scheduled', category: 'Flight Deck', name: 'Campaign Scheduled', description: 'Distribution scheduled' },
+  { id: 'distribution-live', category: 'Flight Deck', name: 'Distribution Pushed Live', description: 'Campaign is now live' },
+]
+
+// All available actions
+const allActions: Action[] = [
+  { id: 'send-inapp', name: 'Send In-App Notification', type: 'notify_internal', description: 'Show notification in Stackwise' },
+  { id: 'send-email-internal', name: 'Send Email (Internal)', type: 'notify_internal', description: 'Email notification to team' },
+  { id: 'send-slack', name: 'Send Slack Message', type: 'notify_internal', description: 'Post to Slack channel (future)' },
+  { id: 'notify-sales-email', name: 'Email Sales Team', type: 'notify_sales', description: 'Send alert email to sales' },
+  { id: 'notify-sales-slack', name: 'Slack Sales Team', type: 'notify_sales', description: 'Post to sales Slack (future)' },
+  { id: 'attach-asset', name: 'Attach Asset', type: 'notify_sales', description: 'Include PDF, manifesto, or report' },
+  { id: 'abm-spike-summary', name: 'ABM Spike Summary', type: 'notify_sales', description: 'Include account spike details' },
+  { id: 'reminder-launch', name: 'Launch Reminder', type: 'reminder', description: 'Remind about upcoming launch' },
+  { id: 'reminder-ending', name: 'Ending Reminder', type: 'reminder', description: 'Remind about campaign ending' },
+  { id: 'suggest-linkedin', name: 'Suggest LinkedIn Post', type: 'suggestion', description: 'Suggest creating LinkedIn post' },
+  { id: 'suggest-onesheet', name: 'Suggest One-Sheet', type: 'suggestion', description: 'Suggest pulling account one-sheet' },
+  { id: 'suggest-email-variation', name: 'Suggest Email Variation', type: 'suggestion', description: 'Suggest email variation' },
+  { id: 'suggest-reallocation', name: 'Suggest Budget Reallocation', type: 'suggestion', description: 'Suggest budget adjustment' },
+]
+
+export default function CollaborationTools() {
+  const [activeSection, setActiveSection] = useState<'collaboration' | 'workflows'>('collaboration')
+  
+  // Collaboration state
+  const [notificationCategories, setNotificationCategories] = useState(defaultNotificationCategories)
+  const [deliveryMethod, setDeliveryMethod] = useState<'inapp' | 'email' | 'slack'>('inapp')
+  
+  // Reports state
+  const [weeklyReportDay, setWeeklyReportDay] = useState('monday')
+  const [monthlyReportDay, setMonthlyReportDay] = useState('1')
+  const [quarterlyReportMonth, setQuarterlyReportMonth] = useState('first-month')
+  const [salesReportRecipients, setSalesReportRecipients] = useState<string[]>([])
+  const [leadershipReportRecipients, setLeadershipReportRecipients] = useState<string[]>([])
+  
+  // Sales Alerts state
+  const [salesAlertCategories, setSalesAlertCategories] = useState({
+    accountSpikes: true,
+    campaignAssets: true,
+    contentReady: false,
+    performanceAlerts: true
+  })
+  
+  // Workflows state with prebuilt defaults
+  const [workflows, setWorkflows] = useState<any[]>([
+    {
+      id: '1',
+      name: 'ABM Spike Alerts',
+      trigger: 'account-spike',
+      actions: ['notify-sales-email'],
+      type: 'Sales Alerts',
+      module: 'Audience Engine',
+      enabled: true,
+      isDefault: true,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    },
+    {
+      id: '2',
+      name: 'Budget Alerts',
+      trigger: 'budget-overspend',
+      actions: ['send-inapp'],
+      type: 'Budget',
+      module: 'Flight Deck',
+      enabled: true,
+      isDefault: true,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    },
+    {
+      id: '3',
+      name: 'Quarterly Review Reminders',
+      trigger: 'quarterly-review-due',
+      actions: ['reminder-quarterly'],
+      type: 'Reminders',
+      module: 'Strategy Studio',
+      enabled: true,
+      isDefault: true,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    },
+    {
+      id: '4',
+      name: 'Annual Reset Reminders',
+      trigger: 'annual-reset-due',
+      actions: ['reminder-annual'],
+      type: 'Reminders',
+      module: 'Strategy Studio',
+      enabled: true,
+      isDefault: true,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    },
+    {
+      id: '5',
+      name: 'Monthly Budget Updates',
+      trigger: 'monthly-budget-check',
+      actions: ['send-email-internal'],
+      type: 'Reports',
+      module: 'Flight Deck',
+      enabled: true,
+      isDefault: true,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    },
+    {
+      id: '6',
+      name: 'Campaign Manifesto Delivery',
+      trigger: 'campaign-scheduled',
+      actions: ['send-manifesto'],
+      type: 'Notifications',
+      module: 'Flight Deck',
+      enabled: true,
+      isDefault: true,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    }
+  ])
+  
+  const [newAutomationDialogOpen, setNewAutomationDialogOpen] = useState(false)
+  const [selectedTrigger, setSelectedTrigger] = useState<string>('')
+  const [selectedActions, setSelectedActions] = useState<string[]>([])
+  const [automationName, setAutomationName] = useState('')
+
+  const toggleNotificationCategory = (id: string) => {
+    setNotificationCategories(cats =>
+      cats.map(cat => cat.id === id ? { ...cat, enabled: !cat.enabled } : cat)
+    )
+  }
+
+  const getTriggerById = (id: string) => allTriggers.find(t => t.id === id)
+  const getActionById = (id: string) => allActions.find(a => a.id === id)
+
+  const [workflowName, setWorkflowName] = useState('')
+  const [selectedWorkflowType, setSelectedWorkflowType] = useState('')
+  const [selectedModule, setSelectedModule] = useState('')
+
+  // Team collaboration state
+  const [teamNotes, setTeamNotes] = useState<any[]>([
+    {
+      id: '1',
+      author: 'Sarah Chen',
+      content: '@marcus Can you review the Q4 campaign assets before Friday?',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      mentions: ['marcus'],
+      comments: [
+        {
+          id: 'c1',
+          author: 'Marcus Johnson',
+          content: 'On it! Will have feedback by Thursday EOD.',
+          timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000)
+        }
+      ],
+      reactions: { approved: 2, discussion: 0, time: 1 }
+    },
+    {
+      id: '2',
+      author: 'Lisa Park',
+      content: 'The new BrandCraft templates are ready for review. @all please check them out!',
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      mentions: ['all'],
+      comments: [],
+      reactions: { approved: 5, discussion: 1, time: 0 }
+    }
+  ])
+  const [newNoteContent, setNewNoteContent] = useState('')
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState('')
+
+  const createWorkflow = () => {
+    if (!workflowName || !selectedTrigger || selectedActions.length === 0) return
+    
+    const newWorkflow = {
+      id: Date.now().toString(),
+      name: workflowName,
+      trigger: selectedTrigger,
+      actions: selectedActions,
+      type: selectedWorkflowType || 'Notifications',
+      module: selectedModule || 'Flight Deck',
+      enabled: true,
+      isDefault: false,
+      assignedTo: '',
+      salesEmail: '',
+      slackChannel: ''
+    }
+    
+    setWorkflows([...workflows, newWorkflow])
+    setNewAutomationDialogOpen(false)
+    setWorkflowName('')
+    setSelectedTrigger('')
+    setSelectedActions([])
+    setSelectedWorkflowType('')
+    setSelectedModule('')
+  }
+
+  const leftContent = (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold mb-1" style={{ color: FLIGHT_DECK_COLOR }}>
+          Collaboration & Workflows
+        </h3>
+        <p className="text-xs text-muted-foreground">Notifications and automation</p>
+      </div>
+
+      <div className="space-y-2">
+        <button
+          onClick={() => setActiveSection('collaboration')}
+          className={`w-full flex items-center gap-3 p-3 rounded-md transition-all ${
+            activeSection === 'collaboration'
+              ? 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800'
+              : 'border border-transparent hover-elevate'
+          }`}
+          data-testid="button-section-collaboration"
+        >
+          <div className={`p-2 rounded-md ${
+            activeSection === 'collaboration'
+              ? 'bg-blue-100 dark:bg-blue-900'
+              : 'bg-muted'
+          }`}>
+            <MessageSquare className={`w-4 h-4 ${
+              activeSection === 'collaboration'
+                ? 'text-blue-600'
+                : 'text-muted-foreground'
+            }`} />
+          </div>
+          <div className="flex-1 text-left">
+            <div className={`text-sm font-medium ${
+              activeSection === 'collaboration' ? 'text-blue-900 dark:text-blue-100' : ''
+            }`}>
+              Collaboration
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Notifications & alerts
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveSection('workflows')}
+          className={`w-full flex items-center gap-3 p-3 rounded-md transition-all ${
+            activeSection === 'workflows'
+              ? 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800'
+              : 'border border-transparent hover-elevate'
+          }`}
+          data-testid="button-section-workflows"
+        >
+          <div className={`p-2 rounded-md ${
+            activeSection === 'workflows'
+              ? 'bg-blue-100 dark:bg-blue-900'
+              : 'bg-muted'
+          }`}>
+            <WorkflowIcon className={`w-4 h-4 ${
+              activeSection === 'workflows'
+                ? 'text-blue-600'
+                : 'text-muted-foreground'
+            }`} />
+          </div>
+          <div className="flex-1 text-left">
+            <div className={`text-sm font-medium ${
+              activeSection === 'workflows' ? 'text-blue-900 dark:text-blue-100' : ''
+            }`}>
+              Workflows
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Automated triggers & actions
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <QuickActions />
+    </div>
+  )
+
+  const centerContent = (
+    <div className="space-y-6">
+      {activeSection === 'collaboration' ? (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Collaboration</h1>
+            <p className="text-muted-foreground">
+              Manage internal notifications, sales alerts, and automated reports
+            </p>
+          </div>
+
+          <Tabs defaultValue="notifications">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="notifications" data-testid="tab-notifications">
+                <Bell className="w-4 h-4 mr-2" />
+                Notifications
+              </TabsTrigger>
+              <TabsTrigger value="sales-alerts" data-testid="tab-sales-alerts">
+                <Send className="w-4 h-4 mr-2" />
+                Sales Alerts
+              </TabsTrigger>
+              <TabsTrigger value="reports" data-testid="tab-reports">
+                <FileText className="w-4 h-4 mr-2" />
+                Reports
+              </TabsTrigger>
+            </TabsList>
+
+            {/* NOTIFICATIONS TAB */}
+            <TabsContent value="notifications" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Internal Notifications</CardTitle>
+                  <CardDescription>
+                    Stay on track with opt-in reminders and alerts. These are nudges, not approval gates.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Delivery Method */}
+                  <div>
+                    <Label className="mb-3 block">Delivery Options</Label>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant={deliveryMethod === 'inapp' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeliveryMethod('inapp')}
+                        data-testid="button-delivery-inapp"
+                      >
+                        <Bell className="w-4 h-4 mr-2" />
+                        In-App
+                      </Button>
+                      <Button
+                        variant={deliveryMethod === 'email' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeliveryMethod('email')}
+                        data-testid="button-delivery-email"
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email
+                      </Button>
+                      <Button
+                        variant={deliveryMethod === 'slack' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDeliveryMethod('slack')}
+                        disabled
+                        data-testid="button-delivery-slack"
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Slack (Future)
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Notification Categories */}
+                  <div>
+                    <Label className="mb-3 block">Notification Categories</Label>
+                    <div className="space-y-3">
+                      {notificationCategories.map(category => {
+                        const Icon = category.icon
+                        return (
+                          <div 
+                            key={category.id} 
+                            className="flex items-center justify-between p-4 rounded-md border hover-elevate"
+                          >
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="p-2 rounded-md bg-muted">
+                                <Icon className="w-4 h-4" style={{ color: FLIGHT_DECK_COLOR }} />
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium text-sm mb-1">{category.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {category.description}
+                                </div>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={category.enabled}
+                              onCheckedChange={() => toggleNotificationCategory(category.id)}
+                              data-testid={`switch-category-${category.id}`}
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Example Notifications */}
+                  <Card className="bg-muted/50">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4" style={{ color: FLIGHT_DECK_COLOR }} />
+                        Example Notifications
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="text-xs space-y-1">
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                          <span>"New content draft is ready to review in BrandCraft."</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                          <span>"Campaign is scheduled to launch tomorrow."</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                          <span>"Pulse Hub flagged a drop in website activity."</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                          <span>"Budget alert: email spend pacing high."</span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                          <span>"Your quarterly review is due next week."</span>
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* SALES ALERTS TAB */}
+            <TabsContent value="sales-alerts" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sales Alert Configuration</CardTitle>
+                  <CardDescription>
+                    Push enablement alerts to sales team with assets and account intelligence
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="p-4 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1 text-sm">
+                          Empower Your Sales Team
+                        </h4>
+                        <p className="text-xs text-blue-800 dark:text-blue-200">
+                          Automatically alert sales when accounts spike, campaigns launch, or assets are ready. 
+                          Include PDFs, manifestos, and ABM intelligence.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggle Categories */}
+                  <div>
+                    <Label className="mb-3 block">Alert Categories</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-md border">
+                        <div>
+                          <div className="font-medium text-sm">ABM Account Spikes</div>
+                          <div className="text-xs text-muted-foreground">
+                            Alert when target accounts show increased activity
+                          </div>
+                        </div>
+                        <Switch
+                          checked={salesAlertCategories.accountSpikes}
+                          onCheckedChange={(checked) => 
+                            setSalesAlertCategories({...salesAlertCategories, accountSpikes: checked})
+                          }
+                          data-testid="switch-sales-account-spikes"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 rounded-md border">
+                        <div>
+                          <div className="font-medium text-sm">Campaign Assets Ready</div>
+                          <div className="text-xs text-muted-foreground">
+                            Share campaign one-sheets and assets for outreach
+                          </div>
+                        </div>
+                        <Switch
+                          checked={salesAlertCategories.campaignAssets}
+                          onCheckedChange={(checked) => 
+                            setSalesAlertCategories({...salesAlertCategories, campaignAssets: checked})
+                          }
+                          data-testid="switch-sales-campaign-assets"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 rounded-md border">
+                        <div>
+                          <div className="font-medium text-sm">New Thought Leadership</div>
+                          <div className="text-xs text-muted-foreground">
+                            Notify when executive content is ready to share
+                          </div>
+                        </div>
+                        <Switch
+                          checked={salesAlertCategories.contentReady}
+                          onCheckedChange={(checked) => 
+                            setSalesAlertCategories({...salesAlertCategories, contentReady: checked})
+                          }
+                          data-testid="switch-sales-content-ready"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 rounded-md border">
+                        <div>
+                          <div className="font-medium text-sm">Performance Alerts</div>
+                          <div className="text-xs text-muted-foreground">
+                            Flag drops or spikes in key metrics
+                          </div>
+                        </div>
+                        <Switch
+                          checked={salesAlertCategories.performanceAlerts}
+                          onCheckedChange={(checked) => 
+                            setSalesAlertCategories({...salesAlertCategories, performanceAlerts: checked})
+                          }
+                          data-testid="switch-sales-performance"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Options */}
+                  <div>
+                    <Label className="mb-3 block">Delivery Method</Label>
+                    <div className="flex items-center gap-3">
+                      <Button variant="default" size="sm">
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email
+                      </Button>
+                      <Button variant="outline" size="sm" disabled>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Slack (Future)
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Example Alert */}
+                  <Card className="bg-muted/50">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4" style={{ color: FLIGHT_DECK_COLOR }} />
+                        Example Sales Alerts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      <p className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                        <span>"Your target account just spiked — here's the asset to send."</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                        <span>"Here's the campaign one-sheet for Acme Corp."</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5" />
+                        <span>"New thought leadership post: share this on LinkedIn."</span>
+                      </p>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* REPORTS TAB */}
+            <TabsContent value="reports" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Automated Reports</CardTitle>
+                  <CardDescription>
+                    Schedule weekly, monthly, and quarterly reports with custom distribution lists
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Weekly Sales Report */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Weekly Sales Report</CardTitle>
+                      <CardDescription className="text-xs">
+                        Performance summary for sales team
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block text-xs">Send Weekly On</Label>
+                        <Select value={weeklyReportDay} onValueChange={setWeeklyReportDay}>
+                          <SelectTrigger data-testid="select-weekly-day">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monday">Monday</SelectItem>
+                            <SelectItem value="tuesday">Tuesday</SelectItem>
+                            <SelectItem value="wednesday">Wednesday</SelectItem>
+                            <SelectItem value="thursday">Thursday</SelectItem>
+                            <SelectItem value="friday">Friday</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-xs">Distribution List</Label>
+                        <Input 
+                          placeholder="Add email addresses (comma separated)" 
+                          data-testid="input-weekly-recipients"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Monthly Leadership Report */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Monthly Leadership Report</CardTitle>
+                      <CardDescription className="text-xs">
+                        Executive summary of marketing performance
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block text-xs">Send Monthly On</Label>
+                        <Select value={monthlyReportDay} onValueChange={setMonthlyReportDay}>
+                          <SelectTrigger data-testid="select-monthly-day">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1st of month</SelectItem>
+                            <SelectItem value="5">5th of month</SelectItem>
+                            <SelectItem value="15">15th of month</SelectItem>
+                            <SelectItem value="last">Last day of month</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-xs">Distribution List</Label>
+                        <Input 
+                          placeholder="Add email addresses (comma separated)" 
+                          data-testid="input-monthly-recipients"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quarterly Leadership Report */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Quarterly Leadership Report</CardTitle>
+                      <CardDescription className="text-xs">
+                        Comprehensive quarterly business review
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block text-xs">Send Quarterly On</Label>
+                        <Select value={quarterlyReportMonth} onValueChange={setQuarterlyReportMonth}>
+                          <SelectTrigger data-testid="select-quarterly-timing">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="first-month">First month of quarter</SelectItem>
+                            <SelectItem value="last-month">Last month of quarter</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-xs">Distribution List</Label>
+                        <Input 
+                          placeholder="Add email addresses (comma separated)" 
+                          data-testid="input-quarterly-recipients"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Workflows</h1>
+            <p className="text-muted-foreground">
+              Automated triggers and actions for marketing operations
+            </p>
+          </div>
+
+          {/* Workflow Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Filter Workflows</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-xs mb-2 block">Workflow Status</Label>
+                  <Select defaultValue="all">
+                    <SelectTrigger data-testid="filter-workflow-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Workflows</SelectItem>
+                      <SelectItem value="enabled">Enabled Only</SelectItem>
+                      <SelectItem value="disabled">Disabled Only</SelectItem>
+                      <SelectItem value="default">Default Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs mb-2 block">Type</Label>
+                  <Select defaultValue="all">
+                    <SelectTrigger data-testid="filter-workflow-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="Sales Alerts">Sales Alerts</SelectItem>
+                      <SelectItem value="Notifications">Notifications</SelectItem>
+                      <SelectItem value="Reports">Reports</SelectItem>
+                      <SelectItem value="Reminders">Reminders</SelectItem>
+                      <SelectItem value="Suggestions">Suggestions</SelectItem>
+                      <SelectItem value="Budget">Budget</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs mb-2 block">Module</Label>
+                  <Select defaultValue="all">
+                    <SelectTrigger data-testid="filter-workflow-module">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Modules</SelectItem>
+                      <SelectItem value="Strategy Studio">Strategy Studio</SelectItem>
+                      <SelectItem value="Pulse Hub">Pulse Hub</SelectItem>
+                      <SelectItem value="BrandCraft">BrandCraft</SelectItem>
+                      <SelectItem value="Flight Deck">Flight Deck</SelectItem>
+                      <SelectItem value="Audience Engine">Audience Engine</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Active Workflows */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Active Workflows</CardTitle>
+                  <CardDescription>Manage your automated workflows</CardDescription>
+                </div>
+                <Button 
+                  onClick={() => setNewAutomationDialogOpen(true)}
+                  data-testid="button-create-workflow"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Workflow
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {workflows.length === 0 ? (
+                <div className="text-center py-12">
+                  <WorkflowIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No workflows yet. Create your first one!</p>
+                </div>
+              ) : (
+                workflows.map(workflow => {
+                  const trigger = getTriggerById(workflow.trigger)
+                  const actions = workflow.actions.map((id: string) => getActionById(id)).filter(Boolean)
+                  
+                  return (
+                    <Card key={workflow.id} className="border-2">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold">{workflow.name}</h4>
+                              <Badge variant={workflow.enabled ? 'default' : 'secondary'}>
+                                {workflow.enabled ? 'Enabled' : 'Disabled'}
+                              </Badge>
+                              {workflow.isDefault && (
+                                <Badge variant="outline" className="text-xs">Default</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Badge variant="secondary" className="text-xs">{workflow.type}</Badge>
+                              <span>•</span>
+                              <span>{workflow.module}</span>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={workflow.enabled}
+                            onCheckedChange={(checked) => {
+                              setWorkflows(wfs =>
+                                wfs.map(w => w.id === workflow.id ? {...w, enabled: checked} : w)
+                              )
+                            }}
+                            data-testid={`switch-workflow-${workflow.id}`}
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-md bg-yellow-100 dark:bg-yellow-900">
+                              <Zap className="w-4 h-4 text-yellow-600" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs text-muted-foreground mb-1">TRIGGER</div>
+                              <div className="text-sm font-medium">{trigger?.name}</div>
+                              <div className="text-xs text-muted-foreground">{trigger?.description}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 ml-6">
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-md bg-green-100 dark:bg-green-900">
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs text-muted-foreground mb-2">ACTIONS</div>
+                              <div className="space-y-1">
+                                {actions.map((action: Action | undefined, i: number) => (
+                                  <div key={i} className="flex items-center gap-2">
+                                    <div className="w-1 h-1 rounded-full bg-green-600" />
+                                    <span className="text-sm">{action?.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Editable Fields */}
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                            <div>
+                              <Label className="text-xs mb-1 block">Assigned To</Label>
+                              <Input 
+                                placeholder="User email"
+                                value={workflow.assignedTo}
+                                onChange={(e) => {
+                                  setWorkflows(wfs =>
+                                    wfs.map(w => w.id === workflow.id ? {...w, assignedTo: e.target.value} : w)
+                                  )
+                                }}
+                                className="text-xs h-8"
+                                data-testid={`input-assigned-${workflow.id}`}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">Sales Email/Slack</Label>
+                              <Input 
+                                placeholder="email or #channel"
+                                value={workflow.salesEmail || workflow.slackChannel}
+                                onChange={(e) => {
+                                  setWorkflows(wfs =>
+                                    wfs.map(w => w.id === workflow.id ? {...w, salesEmail: e.target.value} : w)
+                                  )
+                                }}
+                                className="text-xs h-8"
+                                data-testid={`input-sales-contact-${workflow.id}`}
+                              />
+                            </div>
+                          </div>
+
+                          {!workflow.isDefault && (
+                            <div className="flex items-center gap-2 pt-2">
+                              <Switch
+                                checked={workflow.isDefault}
+                                onCheckedChange={(checked) => {
+                                  setWorkflows(wfs =>
+                                    wfs.map(w => w.id === workflow.id ? {...w, isDefault: checked} : w)
+                                  )
+                                }}
+                                data-testid={`switch-default-${workflow.id}`}
+                              />
+                              <Label className="text-xs text-muted-foreground">Set as default workflow</Label>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Available Triggers Reference */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Available Triggers</CardTitle>
+              <CardDescription className="text-xs">
+                All triggers organized by category
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {['Campaign', 'Audience/ABM', 'Content', 'Pulse Hub', 'Budget', 'Strategy Studio', 'Flight Deck'].map(category => {
+                  const categoryTriggers = allTriggers.filter(t => t.category === category)
+                  return (
+                    <div key={category}>
+                      <h4 className="font-semibold text-sm mb-2">{category}</h4>
+                      <div className="grid gap-2">
+                        {categoryTriggers.map(trigger => (
+                          <div key={trigger.id} className="p-2 rounded-md bg-muted text-xs">
+                            <div className="font-medium">{trigger.name}</div>
+                            <div className="text-muted-foreground">{trigger.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="flex h-full overflow-hidden">
+      {/* Left Sidebar */}
+      <div className="w-64 border-r overflow-y-auto p-6 bg-gradient-to-b from-blue-50/50 to-transparent dark:from-blue-950/20">
+        {leftContent}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {centerContent}
+      </div>
+
+      {/* Create Workflow Dialog */}
+      {newAutomationDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Create New Workflow</CardTitle>
+              <CardDescription>Configure triggers, actions, and workflow type</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="mb-2 block">Workflow Name</Label>
+                <Input 
+                  value={workflowName}
+                  onChange={(e) => setWorkflowName(e.target.value)}
+                  placeholder="e.g., Campaign Launch Notification"
+                  data-testid="input-workflow-name"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-2 block">Workflow Type</Label>
+                  <Select value={selectedWorkflowType} onValueChange={setSelectedWorkflowType}>
+                    <SelectTrigger data-testid="select-workflow-type">
+                      <SelectValue placeholder="Choose type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sales Alerts">Sales Alerts</SelectItem>
+                      <SelectItem value="Notifications">Notifications</SelectItem>
+                      <SelectItem value="Reports">Reports</SelectItem>
+                      <SelectItem value="Reminders">Reminders</SelectItem>
+                      <SelectItem value="Suggestions">Suggestions</SelectItem>
+                      <SelectItem value="Budget">Budget</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-2 block">Module</Label>
+                  <Select value={selectedModule} onValueChange={setSelectedModule}>
+                    <SelectTrigger data-testid="select-workflow-module">
+                      <SelectValue placeholder="Choose module..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Strategy Studio">Strategy Studio</SelectItem>
+                      <SelectItem value="Pulse Hub">Pulse Hub</SelectItem>
+                      <SelectItem value="BrandCraft">BrandCraft</SelectItem>
+                      <SelectItem value="Flight Deck">Flight Deck</SelectItem>
+                      <SelectItem value="Audience Engine">Audience Engine</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Select Trigger (Category-Based)</Label>
+                <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
+                  <SelectTrigger data-testid="select-trigger">
+                    <SelectValue placeholder="Choose trigger..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Campaign', 'Audience/ABM', 'Content', 'Pulse Hub', 'Budget', 'Strategy Studio', 'Flight Deck'].map(category => {
+                      const categoryTriggers = allTriggers.filter(t => t.category === category)
+                      return categoryTriggers.map(trigger => (
+                        <SelectItem key={trigger.id} value={trigger.id}>
+                          [{category}] {trigger.name}
+                        </SelectItem>
+                      ))
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Select Actions (Category-Based)</Label>
+                <div className="space-y-3 max-h-64 overflow-y-auto p-3 rounded-md border">
+                  {['Sales Alerts', 'Notifications', 'Reports', 'Reminders', 'Suggestions', 'Budget'].map(category => {
+                    const categoryActions = allActions.filter(a => {
+                      if (category === 'Sales Alerts') return a.type === 'notify_sales'
+                      if (category === 'Notifications' || category === 'Reports') return a.type === 'notify_internal'
+                      if (category === 'Reminders') return a.type === 'reminder'
+                      if (category === 'Suggestions') return a.type === 'suggestion'
+                      return false
+                    })
+                    
+                    if (categoryActions.length === 0) return null
+                    
+                    return (
+                      <div key={category}>
+                        <h4 className="font-semibold text-xs mb-2 text-muted-foreground">{category}</h4>
+                        <div className="space-y-2">
+                          {categoryActions.map(action => (
+                            <div key={action.id} className="flex items-start gap-2">
+                              <Checkbox
+                                id={action.id}
+                                checked={selectedActions.includes(action.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedActions([...selectedActions, action.id])
+                                  } else {
+                                    setSelectedActions(selectedActions.filter(id => id !== action.id))
+                                  }
+                                }}
+                                data-testid={`checkbox-action-${action.id}`}
+                              />
+                              <label htmlFor={action.id} className="flex-1 cursor-pointer">
+                                <div className="text-sm font-medium">{action.name}</div>
+                                <div className="text-xs text-muted-foreground">{action.description}</div>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </CardContent>
+            <div className="p-6 border-t flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setNewAutomationDialogOpen(false)}
+                data-testid="button-cancel-workflow"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={createWorkflow}
+                disabled={!workflowName || !selectedTrigger || selectedActions.length === 0}
+                data-testid="button-save-workflow"
+              >
+                Create Workflow
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,215 @@
+// Analytics patterns - Expanded for comprehensive detection
+export const ANALYTICS_PATTERNS = [
+  'google-analytics.com',
+  'googletagmanager.com',
+  'analytics.google.com',
+  'facebook.com/tr',
+  'connect.facebook.net',
+  'linkedin.com/analytics',
+  'hotjar.com',
+  'mouseflow.com',
+  'clarity.microsoft.com',
+  'segment.com',
+  'amplitude.com',
+  'mixpanel.com',
+  'heap.io',
+  'plausible.io',
+  'fathom.com',
+  'matomo.org',
+  'statcounter.com',
+  'tiktok.com/i18n/pixel',
+  'snap.licdn.com',
+  'analytics.tiktok.com',
+  'cloudflareinsights.com',
+  'dataLayer',
+  '_gaq',
+  'gtag',
+  'fbq',
+  'ga(',
+];
+
+// Paid advertising patterns - Expanded for all major platforms
+export const PAID_PATTERNS = [
+  'googleadservices.com',
+  'doubleclick.net',
+  'adroll.com',
+  'facebook.com/tr',
+  'bing.com/ads',
+  'linkedin.com/px',
+  'outbrain.com',
+  'taboola.com',
+  'ads.twitter.com',
+  'ads.tiktok.com',
+  'ads.pinterest.com',
+  'ads.reddit.com',
+  'criteo.com',
+  'adnxs.com',
+  'amazon-adsystem.com',
+  'quantserve.com',
+  'rubiconproject.com',
+  'pubmatic.com',
+  'casalemedia.com',
+  'openx.net',
+  'advertising.com',
+  'connexity.net',
+  'adform.net',
+  'media.net',
+  'mgid.com',
+  'revcontent.com',
+  'shareasale.com',
+];
+
+// Social media domains - Expanded for all major platforms
+export const SOCIAL_DOMAINS = [
+  'facebook.com',
+  'twitter.com',
+  'x.com',
+  'linkedin.com',
+  'instagram.com',
+  'youtube.com',
+  'tiktok.com',
+  'pinterest.com',
+  'snapchat.com',
+  'reddit.com',
+  'tumblr.com',
+  'medium.com',
+  'github.com',
+  'discord.com',
+  'whatsapp.com',
+  'telegram.org',
+  't.me',
+  'vimeo.com',
+  'twitch.tv',
+  'threads.net',
+  'mastodon.social',
+];
+
+// CTA phrases - Expanded for comprehensive detection
+export const CTA_PHRASES = [
+  'get started',
+  'sign up',
+  'try free',
+  'book demo',
+  'contact us',
+  'learn more',
+  'download',
+  'subscribe',
+  'buy now',
+  'request quote',
+  'free trial',
+  'start free',
+  'schedule demo',
+  'talk to sales',
+  'contact sales',
+  'register now',
+  'join now',
+  'create account',
+  'start now',
+  'get quote',
+  'request demo',
+  'view demo',
+  'see pricing',
+  'get pricing',
+  'shop now',
+  'order now',
+  'apply now',
+  'enroll now',
+];
+
+// Common probe paths - Expanded for better coverage
+export const COMMON_PROBES = [
+  '/blog',
+  '/blog/',
+  '/news',
+  '/news/',
+  '/articles',
+  '/articles/',
+  '/insights',
+  '/insights/',
+  '/posts',
+  '/posts/',
+  '/resources',
+  '/resources/',
+  '/case-studies',
+  '/testimonials',
+  '/about',
+  '/contact',
+];
+
+// WordPress detection patterns
+export const WORDPRESS_PATTERNS = [
+  'wp-content',
+  'wp-includes',
+  'wordpress',
+  'wp-json',
+];
+
+// Blog URL patterns for detection
+export const BLOG_URL_PATTERNS = [
+  /\/blog\/?/i,
+  /\/news\/?/i,
+  /\/articles?\/?/i,
+  /\/posts?\/?/i,
+  /\/\d{4}\/\d{2}\//,  // Date-based URLs like /2024/01/
+  /\/insights?\/?/i,
+  /\/updates?\/?/i,
+];
+
+// Email marketing platform patterns
+export const EMAIL_MARKETING_PATTERNS = [
+  'mailchimp.com',
+  'list-manage.com',
+  'sendinblue.com',
+  'brevo.com',
+  'klaviyo.com',
+  'hubspot.com',
+  'pardot.com',
+  'constantcontact.com',
+  'getresponse.com',
+  'aweber.com',
+  'activecampaign.com',
+  'mailgun.com',
+  'sendgrid.com',
+  'convertkit.com',
+  'drip.com',
+  'omnisend.com',
+  'moosend.com',
+  'benchmark.com',
+];
+
+// Newsletter signup keywords
+export const NEWSLETTER_KEYWORDS = [
+  'newsletter',
+  'subscribe',
+  'email updates',
+  'stay updated',
+  'join our list',
+  'get updates',
+  'sign up for',
+  'mailing list',
+  'email list',
+  'weekly digest',
+];
+
+export const DEFAULT_TOPICS = [
+  'Brand Messaging',
+  'Website SEO',
+  'Content Marketing',
+  'Social Media',
+  'Lead Generation',
+  'Email Marketing',
+  'Paid Advertising',
+  'Analytics & Tracking',
+];
+
+export const TOPIC_KEY_MAP: Record<string, string> = {
+  'Brand Messaging': 'brand_messaging',
+  'Website SEO': 'website_seo',
+  'Content Marketing': 'content_marketing',
+  'Social Media': 'social_media',
+  'Lead Generation': 'lead_generation',
+  'Email Marketing': 'email_marketing',
+  'Paid Advertising': 'paid_advertising',
+  'Analytics & Tracking': 'analytics_and_tracking',
+  'Competitor Comparison': 'competitor_comparison',
+};
