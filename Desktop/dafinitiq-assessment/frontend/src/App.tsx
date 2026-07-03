@@ -1,4 +1,5 @@
 import { MicControls, Pipeline } from "./components/MicControls";
+import { MetricsPanel } from "./components/MetricsPanel";
 import { ResultCard } from "./components/ResultCard";
 import { useVoiceRecorder } from "./hooks/useVoiceRecorder";
 import "./App.css";
@@ -13,6 +14,11 @@ export default function App() {
     audioRef,
     toggleRecording,
     isBusy,
+    processingStage,
+    progressMessage,
+    metrics,
+    metricAverages,
+    runCount,
   } = useVoiceRecorder();
 
   return (
@@ -36,6 +42,8 @@ export default function App() {
           volume={volume}
           isBusy={isBusy}
           onToggle={toggleRecording}
+          processingStage={processingStage}
+          progressMessage={progressMessage}
         />
 
         {error && (
@@ -63,6 +71,12 @@ export default function App() {
             poem
           />
         </section>
+
+        <MetricsPanel
+          metrics={metrics}
+          averages={metricAverages}
+          runCount={runCount}
+        />
 
         <Pipeline
           isRecording={status === "recording"}

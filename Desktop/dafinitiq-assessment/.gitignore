@@ -15,5 +15,6 @@ venv/
 
 # Build
 frontend/dist/
+backend/logs/
 *.log
 .DS_Store

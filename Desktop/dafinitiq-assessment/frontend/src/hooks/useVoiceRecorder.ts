@@ -1,10 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { processAudio } from "../api/processAudio";
-import type { AppStatus } from "../types";
+import {
+  fetchMetricAverages,
+  finalizeMetrics,
+  logMetricsToConsole,
+  processAudioStream,
+} from "../api/processAudio";
+import type { AppStatus, PipelineMetrics, ProcessingStage } from "../types";
 
 const SILENCE_THRESHOLD = 0.015;
 const SILENCE_DURATION_MS = 1800;
 const MIN_RECORDING_MS = 800;
+
+function computeAverages(history: PipelineMetrics[]): PipelineMetrics | null {
+  if (history.length === 0) return null;
+  const keys: (keyof PipelineMetrics)[] = [
+    "recording_duration_s",
+    "stt_latency_s",
+    "llm_latency_s",
+    "tts_latency_s",
+    "processing_latency_s",
+    "playback_start_delay_s",
+    "end_to_end_latency_s",
+  ];
+  const result = {} as PipelineMetrics;
+  for (const key of keys) {
+    result[key] = history.reduce((sum, m) => sum + m[key], 0) / history.length;
+  }
+  return result;
+}
 
 export function useVoiceRecorder() {
   const [status, setStatus] = useState<AppStatus>("idle");
@@ -12,6 +35,11 @@ export function useVoiceRecorder() {
   const [poem, setPoem] = useState("");
   const [error, setError] = useState("");
   const [volume, setVolume] = useState(0);
+  const [processingStage, setProcessingStage] = useState<ProcessingStage>(null);
+  const [progressMessage, setProgressMessage] = useState("");
+  const [metrics, setMetrics] = useState<PipelineMetrics | null>(null);
+  const [metricsHistory, setMetricsHistory] = useState<PipelineMetrics[]>([]);
+  const [serverAverages, setServerAverages] = useState<PipelineMetrics | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -20,6 +48,7 @@ export function useVoiceRecorder() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const silenceStartRef = useRef<number | null>(null);
   const recordingStartRef = useRef(0);
+  const recordingStopRef = useRef(0);
   const animationFrameRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isProcessingRef = useRef(false);
@@ -34,27 +63,60 @@ export function useVoiceRecorder() {
     silenceStartRef.current = null;
   }, []);
 
-  const runPipeline = useCallback(async (blob: Blob) => {
+  const runPipeline = useCallback(async (blob: Blob, recordingDurationS: number) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     setStatus("processing");
     setError("");
+    setProcessingStage(null);
+    setProgressMessage("");
+    setMetrics(null);
+
+    const pipelineStart = performance.now();
 
     try {
-      const result = await processAudio(blob);
+      const result = await processAudioStream(blob, recordingDurationS, (stage, message) => {
+        setProcessingStage(stage as ProcessingStage);
+        setProgressMessage(message);
+      });
+
       setTranscript(result.transcript);
       setPoem(result.poem);
 
+      const playbackStart = performance.now();
       const audioUrl = `data:${result.audio_mime_type};base64,${result.audio}`;
+
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         setStatus("playing");
         await audioRef.current.play();
-        setStatus("idle");
       }
+
+      const playbackDelayS = (performance.now() - playbackStart) / 1000;
+      const processingWallS = (playbackStart - pipelineStart) / 1000;
+
+      const finalMetrics: PipelineMetrics = {
+        ...result.metrics,
+        playback_start_delay_s: playbackDelayS,
+        end_to_end_latency_s: recordingDurationS + processingWallS + playbackDelayS,
+      };
+
+      setMetrics(finalMetrics);
+      setMetricsHistory((prev) => [...prev.slice(-19), finalMetrics]);
+      logMetricsToConsole(finalMetrics);
+      await finalizeMetrics(finalMetrics);
+
+      const avg = await fetchMetricAverages();
+      if (avg) setServerAverages(avg);
+
+      setStatus("idle");
+      setProcessingStage(null);
+      setProgressMessage("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setStatus("error");
+      setProcessingStage(null);
+      setProgressMessage("");
     } finally {
       isProcessingRef.current = false;
     }
@@ -62,6 +124,7 @@ export function useVoiceRecorder() {
 
   const stopRecording = useCallback(() => {
     cancelAnimationFrame(animationFrameRef.current);
+    recordingStopRef.current = performance.now();
 
     if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current?.stop();
@@ -110,6 +173,7 @@ export function useVoiceRecorder() {
     setError("");
     setTranscript("");
     setPoem("");
+    setMetrics(null);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -141,11 +205,14 @@ export function useVoiceRecorder() {
       recorder.onstop = () => {
         cleanupAudio();
         const blob = new Blob(chunksRef.current, { type: mimeType });
-        if (blob.size > 0) runPipeline(blob);
+        const recordingDurationS =
+          (recordingStopRef.current - recordingStartRef.current) / 1000;
+
+        if (blob.size > 0) runPipeline(blob, recordingDurationS);
         else setStatus("idle");
       };
 
-      recordingStartRef.current = Date.now();
+      recordingStartRef.current = performance.now();
       silenceStartRef.current = null;
       recorder.start(250);
       setStatus("recording");
@@ -168,6 +235,12 @@ export function useVoiceRecorder() {
   }, [status, stopRecording, startRecording]);
 
   useEffect(() => {
+    fetchMetricAverages().then((avg) => {
+      if (avg) setServerAverages(avg);
+    });
+  }, []);
+
+  useEffect(() => {
     return () => {
       cleanupAudio();
       if (mediaRecorderRef.current?.state !== "inactive") {
@@ -175,6 +248,9 @@ export function useVoiceRecorder() {
       }
     };
   }, [cleanupAudio]);
+
+  const localAverages = computeAverages(metricsHistory);
+  const displayAverages = localAverages ?? serverAverages;
 
   return {
     status,
@@ -185,5 +261,10 @@ export function useVoiceRecorder() {
     audioRef,
     toggleRecording,
     isBusy: status === "processing" || status === "playing",
+    processingStage,
+    progressMessage,
+    metrics,
+    metricAverages: displayAverages,
+    runCount: metricsHistory.length,
   };
 }

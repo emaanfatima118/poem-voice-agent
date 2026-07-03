@@ -1,5 +1,5 @@
 import { MicIcon, SpeakerIcon } from "./Icons";
-import type { AppStatus } from "../types";
+import type { AppStatus, ProcessingStage } from "../types";
 
 const STATUS_LABELS: Record<AppStatus, string> = {
   idle: "tap to whisper ♡",
@@ -14,9 +14,18 @@ interface MicControlsProps {
   volume: number;
   isBusy: boolean;
   onToggle: () => void;
+  progressMessage?: string;
+  processingStage?: ProcessingStage;
 }
 
-export function MicControls({ status, volume, isBusy, onToggle }: MicControlsProps) {
+export function MicControls({
+  status,
+  volume,
+  isBusy,
+  onToggle,
+  progressMessage,
+  processingStage,
+}: MicControlsProps) {
   const isRecording = status === "recording";
   const isProcessing = status === "processing";
   const isPlaying = status === "playing";
@@ -59,8 +68,16 @@ export function MicControls({ status, volume, isBusy, onToggle }: MicControlsPro
       <p
         className={`status-text ${isRecording ? "status-text--recording" : ""} ${isProcessing ? "status-text--processing" : ""}`}
       >
-        {STATUS_LABELS[status]}
+        {isProcessing && progressMessage ? progressMessage : STATUS_LABELS[status]}
       </p>
+
+      {isProcessing && processingStage && (
+        <div className="progress-steps">
+          <ProgressStep active={processingStage === "stt"} done={processingStage !== "stt"} label="STT" />
+          <ProgressStep active={processingStage === "llm"} done={processingStage === "tts"} label="LLM" />
+          <ProgressStep active={processingStage === "tts"} done={false} label="TTS" />
+        </div>
+      )}
     </section>
   );
 }
@@ -89,5 +106,23 @@ function Step({ active, icon, label }: { active: boolean; icon: string; label: s
       <span className="pipeline__icon">{icon}</span>
       <span>{label}</span>
     </div>
+  );
+}
+
+function ProgressStep({
+  active,
+  done,
+  label,
+}: {
+  active: boolean;
+  done: boolean;
+  label: string;
+}) {
+  return (
+    <span
+      className={`progress-step ${active ? "progress-step--active" : ""} ${done ? "progress-step--done" : ""}`}
+    >
+      {done ? "✓" : active ? "◎" : "○"} {label}
+    </span>
   );
 }
