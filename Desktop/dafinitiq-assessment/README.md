@@ -1,4 +1,4 @@
-# Dafinitiq AI — Voice to Poetry Pipeline
+# Voice to Poetry Pipeline
 
 Real-time AI voice transformation: speak into your mic, get a poem spoken back.
 
@@ -57,7 +57,7 @@ Open **http://localhost:5173**
 ## Project Structure
 
 ```
-dafinitiq-assessment/
+voice-to-poetry/
 ├── .env                    # API keys (you create this)
 ├── .env.example
 ├── backend/

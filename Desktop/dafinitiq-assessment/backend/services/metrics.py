@@ -62,7 +62,7 @@ def save_metrics(metrics: dict) -> None:
         f.write(json.dumps(entry) + "\n")
 
 
-def get_average_metrics(limit: int = 20) -> dict | None:
+def get_average_metrics(limit: int = 5) -> dict | None:
     """Compute average metrics from the last N log entries."""
     if not METRICS_FILE.exists():
         return None

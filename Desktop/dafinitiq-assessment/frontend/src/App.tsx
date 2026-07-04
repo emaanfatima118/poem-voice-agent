@@ -28,7 +28,6 @@ export default function App() {
 
       <div className="app__container">
         <header className="header">
-          <div className="header__badge">✦ dafinitiq ai ✦</div>
           <h1 className="header__title">
             Voice to <span className="header__accent">Poetry</span>
           </h1>

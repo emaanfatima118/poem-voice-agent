@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from routers.process import router as process_router
 
-app = FastAPI(title="Dafinitiq Voice to Poetry")
+app = FastAPI(title="Voice to Poetry")
 
 app.add_middleware(
     CORSMiddleware,
